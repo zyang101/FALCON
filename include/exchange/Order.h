@@ -16,3 +16,10 @@ struct Order
 
     Timestamp timestamp;
 };
+
+struct OrderLocation
+{
+    Side side;
+    Price price;
+    std::list<Order>::iterator orderIterator;
+};

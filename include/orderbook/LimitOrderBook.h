@@ -62,6 +62,5 @@ private:
 
     std::map<Price, PriceLevel> sellLevels;
 
-    std::unordered_map<OrderId, Order*> orderLookup;
-
+    std::unordered_map<OrderId, OrderLocation> orderLookup;
 };

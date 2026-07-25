@@ -4,9 +4,12 @@
 
 #include "exchange/Order.h"
 
+#include <list>
+
 struct PriceLevel
 {
-    Price price;
+    Price price{};
+    Quantity totalQuantity{0};
 
-    std::deque<Order> orders;
+    std::list<Order> orders;
 };
