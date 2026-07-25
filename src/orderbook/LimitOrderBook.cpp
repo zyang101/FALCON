@@ -38,6 +38,7 @@ void LimitOrderBook::cancelOrder(OrderId id)
     // level.order.pop(location)
 }
 
+/* The highest price someone is willing to buy at*/
 std::optional<Price> LimitOrderBook::bestBid() const
 {
     if (buyLevels.empty())
@@ -48,6 +49,7 @@ std::optional<Price> LimitOrderBook::bestBid() const
     return it->first;
 }
 
+/* The lowest price someone is willing to sell at*/
 std::optional<Price> LimitOrderBook::bestAsk() const
 {
     if (sellLevels.empty())
@@ -56,4 +58,32 @@ std::optional<Price> LimitOrderBook::bestAsk() const
     }
     auto it = sellLevels.begin();
     return it->first;
+}
+
+const Order* LimitOrderBook::bestBidOrder() const
+{
+    if (buyLevels.empty())
+    {
+        return nullptr;
+    }
+    auto it = buyLevels.begin();
+    if (it->second.orders.empty())
+    {
+        return nullptr;
+    }
+    return &(*it->second.orders.begin());
+}
+
+const Order* LimitOrderBook::bestAskOrder() const
+{
+    if (sellLevels.empty())
+    {
+        return nullptr;
+    }
+    auto it = sellLevels.begin();
+    if (it->second.orders.empty())
+    {
+        return nullptr;
+    }
+    return &(*it->second.orders.begin());
 }

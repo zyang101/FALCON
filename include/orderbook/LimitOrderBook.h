@@ -56,6 +56,10 @@ public:
 
     std::optional<Price> bestAsk() const;
 
+    const Order* bestBidOrder() const;
+    
+    const Order* bestAskOrder() const;
+
 private:
 
     std::map<Price, PriceLevel, std::greater<Price>> buyLevels;

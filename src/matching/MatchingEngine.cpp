@@ -1,4 +1,6 @@
 #include "matching/MatchingEngine.h"
+#include "common/Time.h"
+#include <algorithm>
 
 /* processOrder(order)
 
@@ -28,7 +30,7 @@ If order is SELL
     Else
         Trade with the best bid
 */
-void MatchingEngine::processOrder(const Order& order)
+void MatchingEngine::processOrder(Order order)
 {
     if (order.side == Side::Buy)
     {
@@ -40,13 +42,28 @@ void MatchingEngine::processOrder(const Order& order)
             return;
         }
 
-        if (order.price < bestAsk.value())
+        if (order.price < *bestAsk)
         {
             book.addOrder(order);
             return;
         }
+    
+        const Order* restingOrder = book.bestAskOrder();
+        if (!restingOrder)
+        {
+            return;
+        }
+        // Create Trade entry
+        Quantity tradeQuantity = std::min(order.remainingQuantity, restingOrder->remainingQuantity);
 
-        // TODO: Execute trade
+        Trade trade
+        {
+            order.id,
+            restingOrder->id,
+            restingOrder->price,
+            tradeQuantity,
+            currentTimestamp()
+        };
     }
     else
     {
@@ -58,12 +75,27 @@ void MatchingEngine::processOrder(const Order& order)
             return;
         }
 
-        if (order.price > bestBid.value())
+        if (order.price > *bestBid)
         {
             book.addOrder(order);
             return;
         }
 
-        // TODO: Execute trade
+        // Create Trade Entry
+        const Order* restingOrder = book.bestBidOrder();
+        if (!restingOrder)
+        {
+            return;
+        }
+        Quantity tradeQuantity = std::min(order.remainingQuantity, restingOrder->remainingQuantity);
+
+        Trade trade{
+            restingOrder->id,
+            order.id,
+            restingOrder->price,
+            tradeQuantity,
+            currentTimestamp()
+        };
+
     }
 }
