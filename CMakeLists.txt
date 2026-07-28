@@ -10,4 +10,7 @@ include_directories(include)
 add_executable(
     falcon
     src/main.cpp
+    src/common/Time.cpp
+    src/orderbook/LimitOrderBook.cpp
+    src/matching/MatchingEngine.cpp
 )

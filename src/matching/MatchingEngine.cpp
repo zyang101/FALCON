@@ -1,6 +1,9 @@
 #include "matching/MatchingEngine.h"
-#include "common/Time.h"
+
 #include <algorithm>
+
+#include "common/Time.h"
+#include "exchange/Trade.h"
 
 /* processOrder(order)
 
@@ -30,7 +33,7 @@ If order is SELL
     Else
         Trade with the best bid
 */
-void MatchingEngine::processOrder(Order order)
+void MatchingEngine::processOrder(const Order& order)
 {
     if (order.side == Side::Buy)
     {

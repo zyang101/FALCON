@@ -10,11 +10,12 @@ int main()  {
         OrderType::Limit,
         100,
         10,
+        10,
         123456789
     };
     std::cout << "Order ID: " << order.id << std::endl;
     std::cout << "Price: " << order.price << std::endl;
-    std::cout << "Quantity: " << order.quantity << std::endl;
+    std::cout << "Quantity: " << order.remainingQuantity << std::endl;
 
     return 0;
 }

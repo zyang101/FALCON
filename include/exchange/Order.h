@@ -1,5 +1,7 @@
 #pragma once
 
+#include <list>
+
 #include "common/Types.h"
 
 struct Order

@@ -43,6 +43,7 @@ std::unordered_map<OrderId, Order*>
 #include <unordered_map>
 
 #include "exchange/Order.h"
+#include "orderbook/PriceLevel.h"
 
 class LimitOrderBook
 {
