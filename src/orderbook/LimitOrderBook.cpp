@@ -10,25 +10,24 @@ void LimitOrderBook::addOrder(const Order& order)
         level.price = order.price;
         level.orders.push_back(order);
         level.totalQuantity += order.remainingQuantity;
-        orderLookup[order.id] = OrderLocation   {
+        orderLookup[order.id] = OrderLocation{
             order.side,
             order.price,
             std::prev(level.orders.end())
         };
-    }   
+    }
     else
     {
         auto& level = sellLevels[order.price];
         level.price = order.price;
         level.orders.push_back(order);
         level.totalQuantity += order.remainingQuantity;
-            orderLookup[order.id] = OrderLocation   {
+        orderLookup[order.id] = OrderLocation{
             order.side,
             order.price,
             std::prev(level.orders.end())
         };
     }
-    
 }
 
 void LimitOrderBook::cancelOrder(OrderId id)
@@ -36,6 +35,70 @@ void LimitOrderBook::cancelOrder(OrderId id)
     // TODO: Implement after adding order lookup table.
     // auto it = orderLookup.find(id)
     // level.order.pop(location)
+}
+
+void LimitOrderBook::fillOrder(OrderId id, Quantity quantity)
+{
+    auto lookupIt = orderLookup.find(id);
+    if (lookupIt == orderLookup.end())
+    {
+        return;
+    }
+
+    OrderLocation& location = lookupIt->second;
+    Order& order = *location.orderIterator;
+
+    if (quantity > order.remainingQuantity)
+    {
+        quantity = order.remainingQuantity;
+    }
+
+    order.remainingQuantity -= quantity;
+
+    if (location.side == Side::Buy)
+    {
+        auto levelIt = buyLevels.find(location.price);
+        if (levelIt == buyLevels.end())
+        {
+            return;
+        }
+
+        PriceLevel& level = levelIt->second;
+        level.totalQuantity -= quantity;
+
+        if (order.remainingQuantity == 0)
+        {
+            level.orders.erase(location.orderIterator);
+            orderLookup.erase(lookupIt);
+
+            if (level.orders.empty())
+            {
+                buyLevels.erase(levelIt);
+            }
+        }
+    }
+    else
+    {
+        auto levelIt = sellLevels.find(location.price);
+        if (levelIt == sellLevels.end())
+        {
+            return;
+        }
+
+        PriceLevel& level = levelIt->second;
+        level.totalQuantity -= quantity;
+
+        if (order.remainingQuantity == 0)
+        {
+            level.orders.erase(location.orderIterator);
+            orderLookup.erase(lookupIt);
+
+            if (level.orders.empty())
+            {
+                sellLevels.erase(levelIt);
+            }
+        }
+    }
 }
 
 /* The highest price someone is willing to buy at*/
@@ -60,7 +123,7 @@ std::optional<Price> LimitOrderBook::bestAsk() const
     return it->first;
 }
 
-const Order* LimitOrderBook::bestBidOrder() const
+Order* LimitOrderBook::bestBidOrder()
 {
     if (buyLevels.empty())
     {
@@ -74,7 +137,7 @@ const Order* LimitOrderBook::bestBidOrder() const
     return &(*it->second.orders.begin());
 }
 
-const Order* LimitOrderBook::bestAskOrder() const
+Order* LimitOrderBook::bestAskOrder()
 {
     if (sellLevels.empty())
     {
@@ -86,4 +149,14 @@ const Order* LimitOrderBook::bestAskOrder() const
         return nullptr;
     }
     return &(*it->second.orders.begin());
+}
+
+const Order* LimitOrderBook::bestBidOrder() const
+{
+    return const_cast<LimitOrderBook*>(this)->bestBidOrder();
+}
+
+const Order* LimitOrderBook::bestAskOrder() const
+{
+    return const_cast<LimitOrderBook*>(this)->bestAskOrder();
 }

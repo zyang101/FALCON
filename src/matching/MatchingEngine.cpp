@@ -3,102 +3,89 @@
 #include <algorithm>
 
 #include "common/Time.h"
-#include "exchange/Trade.h"
 
-/* processOrder(order)
+/*
+processOrder(order)
 
 ↓
 
-If order is BUY
+While incoming quantity remains and the market is crossed:
+    Trade against the best opposite order (resting price)
+    Apply fill to resting order
+    Reduce incoming remaining quantity
 
-    If there is no ask
-        Add order to book
-
-    Else if buy price < best ask
-        Add order to book
-
-    Else
-        Trade with the best ask
-
-----------------------------
-
-If order is SELL
-
-    If there is no bid
-        Add order to book
-
-    Else if sell price > best bid
-        Add order to book
-
-    Else
-        Trade with the best bid
+If leftover quantity and order is a Limit:
+    Rest it on the book
 */
-void MatchingEngine::processOrder(const Order& order)
+void MatchingEngine::processOrder(Order order)
 {
     if (order.side == Side::Buy)
     {
-        auto bestAsk = book.bestAsk();
+        while (order.remainingQuantity > 0)
+        {
+            auto bestAsk = book.bestAsk();
+            if (!bestAsk || order.price < *bestAsk)
+            {
+                break;
+            }
 
-        if (!bestAsk)
-        {
-            book.addOrder(order);
-            return;
-        }
+            Order* restingOrder = book.bestAskOrder();
+            if (!restingOrder)
+            {
+                break;
+            }
 
-        if (order.price < *bestAsk)
-        {
-            book.addOrder(order);
-            return;
-        }
-    
-        const Order* restingOrder = book.bestAskOrder();
-        if (!restingOrder)
-        {
-            return;
-        }
-        // Create Trade entry
-        Quantity tradeQuantity = std::min(order.remainingQuantity, restingOrder->remainingQuantity);
+            Quantity tradeQuantity = std::min(
+                order.remainingQuantity,
+                restingOrder->remainingQuantity);
 
-        Trade trade
-        {
-            order.id,
-            restingOrder->id,
-            restingOrder->price,
-            tradeQuantity,
-            currentTimestamp()
-        };
+            trades_.push_back(Trade{
+                order.id,
+                restingOrder->id,
+                restingOrder->price,
+                tradeQuantity,
+                currentTimestamp()
+            });
+
+            book.fillOrder(restingOrder->id, tradeQuantity);
+            order.remainingQuantity -= tradeQuantity;
+        }
     }
     else
     {
-        auto bestBid = book.bestBid();
-
-        if (!bestBid)
+        while (order.remainingQuantity > 0)
         {
-            book.addOrder(order);
-            return;
+            auto bestBid = book.bestBid();
+            if (!bestBid || order.price > *bestBid)
+            {
+                break;
+            }
+
+            Order* restingOrder = book.bestBidOrder();
+            if (!restingOrder)
+            {
+                break;
+            }
+
+            Quantity tradeQuantity = std::min(
+                order.remainingQuantity,
+                restingOrder->remainingQuantity);
+
+            trades_.push_back(Trade{
+                restingOrder->id,
+                order.id,
+                restingOrder->price,
+                tradeQuantity,
+                currentTimestamp()
+            });
+
+            book.fillOrder(restingOrder->id, tradeQuantity);
+            order.remainingQuantity -= tradeQuantity;
         }
+    }
 
-        if (order.price > *bestBid)
-        {
-            book.addOrder(order);
-            return;
-        }
-
-        // Create Trade Entry
-        const Order* restingOrder = book.bestBidOrder();
-        if (!restingOrder)
-        {
-            return;
-        }
-        Quantity tradeQuantity = std::min(order.remainingQuantity, restingOrder->remainingQuantity);
-
-        Trade trade{
-            restingOrder->id,
-            order.id,
-            restingOrder->price,
-            tradeQuantity,
-            currentTimestamp()
-        };
-
+    if (order.remainingQuantity > 0 && order.type == OrderType::Limit)
+    {
+        book.addOrder(order);
     }
 }

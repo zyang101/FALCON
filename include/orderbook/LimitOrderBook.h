@@ -53,12 +53,18 @@ public:
 
     void cancelOrder(OrderId id);
 
+    // Reduce a resting order's quantity. Removes the order (and empty price
+    // level) when it is fully filled.
+    void fillOrder(OrderId id, Quantity quantity);
+
     std::optional<Price> bestBid() const;
 
     std::optional<Price> bestAsk() const;
 
+    Order* bestBidOrder();
+    Order* bestAskOrder();
+
     const Order* bestBidOrder() const;
-    
     const Order* bestAskOrder() const;
 
 private:
