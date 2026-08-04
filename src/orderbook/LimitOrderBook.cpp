@@ -32,9 +32,42 @@ void LimitOrderBook::addOrder(const Order& order)
 
 void LimitOrderBook::cancelOrder(OrderId id)
 {
-    // TODO: Implement after adding order lookup table.
-    // auto it = orderLookup.find(id)
-    // level.order.pop(location)
+    auto lookupIt = orderLookup.find(id);
+    if (lookupIt == orderLookup.end())
+    {
+        return;
+    }
+
+    OrderLocation& location = lookupIt->second;
+    Order& order = *location.orderIterator;
+    Quantity quantity = order.remainingQuantity;
+    
+    if (location.side == Side::Buy)
+    {
+        auto levelIt = buyLevels.find(location.price);
+        if (levelIt == buyLevels.end())
+            return;
+        PriceLevel& level = levelIt->second;
+        level.totalQuantity -= quantity;
+        level.orders.erase(location.orderIterator);
+        orderLookup.erase(lookupIt);
+
+        if (level.orders.empty())
+            buyLevels.erase(levelIt);
+    }
+    else
+    {
+        auto levelIt = sellLevels.find(location.price);
+        if (levelIt == sellLevels.end())
+            return;
+        PriceLevel& level = levelIt->second;
+        level.totalQuantity -= quantity;
+        level.orders.erase(location.orderIterator);
+        orderLookup.erase(lookupIt);
+
+        if (level.orders.empty())
+            sellLevels.erase(levelIt);
+    }
 }
 
 void LimitOrderBook::fillOrder(OrderId id, Quantity quantity)

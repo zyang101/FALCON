@@ -201,3 +201,29 @@ TEST(MatchingEngine, FifoWithinSamePriceLevel)
     EXPECT_EQ(engine.orderBook().bestAskOrder()->id, 2u);
     EXPECT_EQ(engine.orderBook().bestAskOrder()->remainingQuantity, 50u);
 }
+
+// If an order is cancelled, it should be removed from the book.
+TEST(MatchingEngine, CancelSellOrder)
+{
+    MatchingEngine engine;
+    engine.processOrder(makeLimit(1, Side::Sell, 101, 30));
+    engine.cancelOrder(1);
+
+    EXPECT_TRUE(engine.trades().empty());
+    EXPECT_FALSE(engine.orderBook().bestAsk().has_value());
+    EXPECT_FALSE(engine.orderBook().bestBid().has_value());
+    EXPECT_EQ(engine.orderBook().bestAskOrder(), nullptr);
+}
+
+// If an order is cancelled, it should be removed from the book.
+TEST(MatchingEngine, CancelBuyOrder)
+{
+    MatchingEngine engine;
+    engine.processOrder(makeLimit(1, Side::Buy, 101, 30));
+    engine.cancelOrder(1);
+
+    EXPECT_TRUE(engine.trades().empty());
+    EXPECT_FALSE(engine.orderBook().bestBid().has_value());
+    EXPECT_FALSE(engine.orderBook().bestAsk().has_value());
+    EXPECT_EQ(engine.orderBook().bestBidOrder(), nullptr);
+}

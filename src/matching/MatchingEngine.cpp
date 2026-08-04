@@ -89,3 +89,19 @@ void MatchingEngine::processOrder(Order order)
         book.addOrder(order);
     }
 }
+
+/*
+cancelOrder(id)
+
+↓
+
+Forward to LimitOrderBook
+    lookup order by id
+    remove full remaining quantity from its price level
+    erase from FIFO + lookup
+    drop empty price level if needed
+*/
+void MatchingEngine::cancelOrder(OrderId id)
+{
+    book.cancelOrder(id);
+}

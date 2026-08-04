@@ -5,7 +5,8 @@
 
                         +------------------+
    Incoming Order ----> | MatchingEngine   |
-                        |  processOrder()  |
+   Cancel (by id) ----> |  processOrder()  |
+                        |  cancelOrder()   |
                         +--------+---------+
                                  |
                                  | owns
@@ -90,6 +91,29 @@
         |
         +-- if fully filled: erase from FIFO + lookup
         +-- if level empty:  erase price from map
+
+ cancelOrder(id)
+ ---------------
+   Incoming cancel ----> MatchingEngine::cancelOrder(id)
+                                |
+                                v
+                       book.cancelOrder(id)
+                                |
+                                v
+   lookup id -> OrderLocation  (missing? done)
+                                |
+                                v
+   Remove full remaining qty from level.totalQuantity
+   Erase order from FIFO list
+   Erase id from orderLookup
+                                |
+                                v
+   If price level empty -> erase price from buy/sell map
+
+   Notes:
+   - Cancel only affects resting orders (already on the book)
+   - Unknown / already-filled ids are a no-op
+   - Does not create a Trade
 ================================================================================
 */
 
@@ -105,6 +129,7 @@ class MatchingEngine
 {
 public:
     void processOrder(Order order);
+    void cancelOrder(OrderId id);
 
     const std::vector<Trade>& trades() const { return trades_; }
     const LimitOrderBook& orderBook() const { return book; }
