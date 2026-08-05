@@ -227,3 +227,48 @@ TEST(MatchingEngine, CancelBuyOrder)
     EXPECT_FALSE(engine.orderBook().bestAsk().has_value());
     EXPECT_EQ(engine.orderBook().bestBidOrder(), nullptr);
 }
+
+// If an order is cancelled, the opposite side should remain intact.
+TEST(MatchingEngine, CancelOneSideLeavesOppositeIntact)
+{
+    MatchingEngine engine;
+    engine.processOrder(makeLimit(1, Side::Buy, 100, 40));
+    engine.processOrder(makeLimit(2, Side::Sell, 101, 50));
+    engine.cancelOrder(1);
+
+    EXPECT_TRUE(engine.trades().empty());
+    EXPECT_FALSE(engine.orderBook().bestBid().has_value());
+    ASSERT_TRUE(engine.orderBook().bestAsk().has_value());
+    EXPECT_EQ(*engine.orderBook().bestAsk(), 101);
+    EXPECT_EQ(engine.orderBook().bestAskOrder()->id, 2u);
+    EXPECT_EQ(engine.orderBook().bestAskOrder()->remainingQuantity, 50u);
+}
+
+// If an order is cancelled, the remaining orders at the same price level should remain in the book.
+TEST(MatchingEngine, CancelFirstOfTwoAtSamePrice)
+{
+    MatchingEngine engine;
+    engine.processOrder(makeLimit(1, Side::Sell, 101, 30));
+    engine.processOrder(makeLimit(2, Side::Sell, 101, 70));
+    engine.cancelOrder(1);
+
+    EXPECT_TRUE(engine.trades().empty());
+    ASSERT_TRUE(engine.orderBook().bestAsk().has_value());
+    EXPECT_EQ(*engine.orderBook().bestAsk(), 101);
+    EXPECT_EQ(engine.orderBook().bestAskOrder()->id, 2u);
+    EXPECT_EQ(engine.orderBook().bestAskOrder()->remainingQuantity, 70u);
+}
+
+// If an unknown order is cancelled, it should be ignored.
+TEST(MatchingEngine, CancelUnknownOrderIdIsNoOp)
+{
+    MatchingEngine engine;
+    engine.processOrder(makeLimit(1, Side::Buy, 100, 50));
+    engine.cancelOrder(2);
+
+    EXPECT_TRUE(engine.trades().empty());
+    ASSERT_TRUE(engine.orderBook().bestBid().has_value());
+    EXPECT_EQ(*engine.orderBook().bestBid(), 100);
+    EXPECT_EQ(engine.orderBook().bestBidOrder()->id, 1u);
+    EXPECT_EQ(engine.orderBook().bestBidOrder()->remainingQuantity, 50u);
+}
